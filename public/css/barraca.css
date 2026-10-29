@@ -1,0 +1,59 @@
+/* Barraca de achados e perdidos: a tela inicial pública ocupa a janela toda */
+body.barraca-tela { display: flex; flex-direction: column; min-height: 100vh; }
+body.barraca-tela main { flex: 1; display: flex; flex-direction: column; max-width: none; padding: 0; margin: 0; width: 100%; }
+body.barraca-tela .rodape { display: none; }
+body.barraca-tela .topo__interno { max-width: none; padding: 12px clamp(12px, 3vw, 48px); }
+.so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.barraca-pagina { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.barraca { position: relative; flex: 1; min-height: 420px; overflow: hidden; background: #cfe8fb; font-family: 'Fredoka', system-ui, sans-serif; }
+.barraca canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+
+/* Nome do item sob o mouse */
+.barraca__nome {
+  position: fixed; z-index: 5; transform: translate(-50%, -150%); pointer-events: none; background: #fff; color: #22204a;
+  border: 2px solid #22204a; border-radius: 10px; padding: 4px 12px; font-weight: 600; font-size: 15px;
+  box-shadow: 3px 3px 0 #22204a; white-space: nowrap; max-width: 80vw; overflow: hidden; text-overflow: ellipsis;
+}
+.barraca__dica {
+  position: absolute; z-index: 4; left: 50%; bottom: 14px; transform: translateX(-50%); pointer-events: none;
+  background: rgba(34, 32, 74, .82); color: #fff; border-radius: 999px; padding: 6px 16px; font-size: 14px; white-space: nowrap;
+}
+.barraca__aviso { padding: 16px; }
+.barraca--sem3d { background: #fff; overflow: auto; padding: 16px; }
+.barraca--sem3d ul { list-style: none; padding: 0; display: grid; gap: 8px; }
+.barraca--sem3d li button { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #22204a; border-radius: 8px; background: #fff; cursor: pointer; }
+
+/* Item aberto em tela grande: o 3D à esquerda, as informações à direita */
+.visor {
+  font-family: 'Fredoka', 'Comic Sans MS', system-ui, sans-serif; color: #22204a;
+  width: min(1100px, 94vw); height: min(720px, 92vh); padding: 0; border: 4px solid #22204a; border-radius: 22px;
+  background: #fffaf0; box-shadow: 8px 8px 0 #22204a; overflow: hidden;
+}
+.visor[open] { display: grid; grid-template-columns: 1.1fr 1fr; animation: abre .3s ease-out; }
+.visor::backdrop { background: rgba(34, 32, 74, .6); }
+.visor__fechar {
+  position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 3px solid #22204a; border-radius: 50%;
+  background: #fff; font-size: 18px; cursor: pointer; box-shadow: 2px 2px 0 #22204a; z-index: 2;
+}
+.visor__figura { position: relative; min-height: 0; background: radial-gradient(circle at 50% 35%, #ffffff, #cfe3f2 70%); border-right: 4px solid #22204a; }
+.visor__figura canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.visor__figura[hidden] { display: none; }
+.visor__info { display: flex; flex-direction: column; gap: 14px; padding: 36px 32px; overflow: auto; }
+.visor__tipo { text-transform: uppercase; letter-spacing: 1px; color: #5b5990; font-weight: 600; }
+.visor__info h2 { font-size: clamp(24px, 3vw, 36px); line-height: 1.15; margin: 0; }
+.visor__info p { margin: 0; font-size: 17px; }
+.visor__info .dados { grid-template-columns: 120px 1fr; gap: 6px 14px; }
+.visor__info .btn { align-self: flex-start; margin-top: 6px; }
+@keyframes abre { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 720px) {
+  .visor { height: 92vh; }
+  .visor[open] { grid-template-columns: 1fr; grid-template-rows: 42% 1fr; }
+  .visor__figura { border-right: 0; border-bottom: 4px solid #22204a; }
+  .visor__info { padding: 20px; }
+  .barraca__dica { white-space: normal; text-align: center; width: 80%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .visor { animation: none !important; }
+}

@@ -1,25 +1,35 @@
 # Achados e Perdidos do IML
 
-Sistema acadêmico que cruza **corpos não identificados** recebidos pelo IML com **pessoas desaparecidas**
-registradas pelas famílias. Ele dá uma nota de compatibilidade de 0 a 100 e acompanha o caso até a
-identificação oficial e a entrega do corpo à família.
+Mural público de **achados e perdidos** do IML: objetos de falecidos (celular, documento, aliança, mochila…)
+e corpos não identificados. Qualquer pessoa pode buscar no mural e avisar o IML com o botão
+**“Eu conheço / é meu”**. A equipe do IML cadastra os itens, avalia as manifestações e marca
+o item como devolvido ou identificado.
 
-A interface tem humor de repartição pública: Câmara Fria "Hotel Zero Grau", "Match do IML",
-carimbos, crachás. A piada é sempre com a burocracia, nunca com as vítimas. Todos os dados são fictícios.
+Todos os dados são fictícios.
 
-- **Banco:** PostgreSQL 14+ (testado no 16): 20 tabelas, 1 view e 16 índices da especificação, mais triggers.
+- **Banco:** PostgreSQL 14+: 6 tabelas, triggers e índices.
 - **Backend:** Node.js + Express + `pg`.
-- **Frontend:** HTML, CSS e JavaScript puro (sem build), servidos pelo próprio Express.
+- **Frontend:** HTML, CSS e JavaScript puro (sem build), servidos pelo próprio Express. A barraca usa three.js, instalado com `npm install` e servido localmente (sem CDN).
 
----
+## O que o sistema faz
+
+**Tela pública (sem login)**
+- A tela inicial é uma **barraca em 3D** (three.js) em tela cheia: os objetos ficam no balcão e nas prateleiras, e os corpos não identificados aparecem só pelos pés, sob uma cortina no canto direito. Ao clicar, o item gira e abre em tela grande, com o modelo 3D à esquerda (objeto ou manequim, que dá para girar arrastando) e as informações à direita.
+- Página de cada item, com o botão **Eu conheço / é meu**: a pessoa informa nome,
+  contato, parentesco e o que reconheceu. O contato nunca aparece no mural.
+
+**Tela de administrador (IML, com login)**
+- Cadastra objetos com descrição, local e data em que foram encontrados.
+- Cadastra corpos. Todo corpo não identificado já aparece no mural, **só com características gerais**;
+  gaveta e observações ficam internas.
+- Recebe as manifestações e avalia: *em análise*, *aceita* (objeto → **devolvido**, corpo → **identificado**,
+  e o item sai do mural) ou *recusada*. Todo parecer fica registrado.
 
 ## Como rodar
 
-### 1. Instalar o PostgreSQL 16
+### 1. Instalar o PostgreSQL
 
-1. Baixe o instalador para Windows em <https://www.postgresql.org/download/windows/> (EDB).
-2. Durante a instalação, **anote a senha** do usuário `postgres` e mantenha a porta **5432**.
-   O pgAdmin vem junto e é opcional.
+Baixe em <https://www.postgresql.org/download/windows/>, anote a senha do usuário `postgres` e mantenha a porta 5432.
 
 ### 2. Configurar o projeto
 
@@ -28,20 +38,16 @@ npm install
 copy .env.example .env      # no Git Bash: cp .env.example .env
 ```
 
-Abra o `.env` e coloque em `PGPASSWORD` a senha que você definiu na instalação.
+Abra o `.env` e coloque em `PGPASSWORD` a senha do `postgres`.
 
 ### 3. Criar o banco e carregar os dados
 
 ```bash
 npm run db:criar    # cria o banco "iml" e roda db/01, 02 e 03
-npm run db:testar   # roda os testes da seção 10 da especificação (não altera nada)
+npm run db:testar   # testes das regras do banco (não altera nada)
 ```
 
-> ⚠️ `db:criar` **apaga e recria** o banco `iml`. Use também para "zerar" a demonstração.
-
-Esses comandos não precisam do `psql`. Se preferir fazer manualmente (psql ou Query Tool do pgAdmin),
-crie o banco `iml` e execute os arquivos de `db/` em ordem: `01_schema.sql`, `02_logica.sql`, `03_seed.sql` e,
-se quiser, `04_testes.sql`.
+> ⚠️ `db:criar` **apaga e recria** o banco `iml`. Use também para “zerar” a demonstração.
 
 ### 4. Subir o sistema
 
@@ -49,78 +55,55 @@ se quiser, `04_testes.sql`.
 npm start
 ```
 
-Acesse <http://localhost:3000>. A tela de login lista os crachás de demonstração (senha **`iml123`** para todos):
+Abra <http://localhost:3000>. O mural é público; a **Área do IML** pede login:
+`admin@iml.demo` (ou `plantao@iml.demo`), senha `iml123`.
 
-| Crachá | Perfil | O que pode fazer |
-|---|---|---|
-| Kleber Balcão (`atendente@iml.demo`) | ATENDENTE | Registrar desaparecimentos, liberar corpos, marcar "encontrado vivo" |
-| Dr. Ivo Lupa (`perito@iml.demo`) | PERITO | Check-in de corpos, exames, **identificação oficial**, liberação |
-| Sherlaine Holmes (`investigador@iml.demo`) | INVESTIGADOR | Rodar o cruzamento, assumir, registrar confrontos, confirmar ou descartar |
-| Neide Carimbo (`admin@iml.demo`) | ADMIN | Tudo |
+## Roteiro de demonstração
 
----
+1. **Barraca** (sem login): passe o mouse nos itens e clique em um deles para vê-lo em 3D e em tela grande.
+2. Abra um item e clique em **Eu conheço / é meu**; preencha e envie.
+3. **Área do IML** → *Painel*: a fila de manifestações mostra o novo envio.
+4. *Manifestações* → **Aceitar** a da aliança, com parecer: o objeto vira **devolvido**, sai do mural e as outras
+   manifestações sobre ele são recusadas sozinhas.
 
-## Roteiro de demonstração (uns 5 minutos)
+## Banco de dados
 
-1. **Investigadora** → *Match do IML*: o primeiro par é a Rosimeire com nota **100**. Clique em 🔍 para assumir.
-2. Na ficha do caso, compare os critérios e os bonecos lado a lado (verde = sinal que bateu) e
-   **registre um confronto** COMPATÍVEL.
-3. Troque para o **perito** → abra o mesmo caso → **Identificar oficialmente**. O banco muda sozinho os status
-   do corpo, do desaparecido e da correspondência, e descarta as outras sugestões dos dois.
-4. Ainda como perito (ou atendente) → **Liberar para a família**. O resultado é o carimbo de *CASO ENCERRADO*
-   e a linha do tempo completa.
-5. **Atendente** → *Registrar sumiço*: preencha as 3 etapas e clique no boneco para anotar uma tatuagem.
-   O cruzamento roda na hora e avisa se já existe um match.
-6. Mostre as regras do banco em ação: tente descartar sem justificativa, ou cadastrar um desaparecido sem
-   idade e sem data de nascimento. O banco recusa e a tela mostra o motivo.
+| Tabela | Para quê |
+|---|---|
+| `usuario` | equipe do IML |
+| `local` | onde o objeto ou o corpo foi encontrado |
+| `objeto` | pertences de falecidos (`EM_GUARDA` / `DEVOLVIDO`) |
+| `corpo` | corpos (`NAO_IDENTIFICADO` / `IDENTIFICADO`); `caracteristicas` é público, `observacoes` é interno |
+| `manifestacao` | “Eu conheço / é meu” (`RECEBIDA`, `EM_ANALISE`, `ACEITA`, `RECUSADA`) |
+| `historico_status` | linha do tempo de objetos, corpos e manifestações |
 
-Casos já prontos no seed:
+O que o banco faz sozinho (`db/02_logica.sql`):
 
-| Par | Nota | Situação |
-|---|---|---|
-| Valdemar × IML-2026-000101 | 90 | Em análise (caso da seção 10 do PDF) |
-| Josué × IML-2026-000101 | 34 | Abaixo de 50, não é gravado (seção 10 do PDF) |
-| Rosimeire × IML-2026-000102 | 100 | Na fila: match perfeito |
-| Heitor × IML-2026-000106 | 80 | Já identificado e liberado (linha do tempo completa) |
-| Marcos Vinícius | — | Localizado vivo |
-
----
+- Códigos automáticos `OBJ-2026-000012` e `IML-2026-000123`.
+- Toda mudança de status gera `historico_status`, com o usuário (`app.id_usuario`, definido pelo backend).
+- Manifestação só é aceita para item ainda aberto; aceitar ou recusar exige parecer.
+- Manifestação **aceita** encerra o item (objeto devolvido / corpo identificado) e as demais manifestações abertas dele são recusadas.
+- Manifestação decidida não pode ser reaberta.
 
 ## Estrutura
 
 ```
-db/
-  01_schema.sql     script da especificação (fiel ao anexo do PDF)
-  02_logica.sql     triggers e funções que o spec exige mas não implementava
-  03_seed.sql       dados fictícios
-  04_testes.sql     testes automáticos (rodam numa transação desfeita)
-scripts/db.js       npm run db:criar / db:testar
+db/            01_schema, 02_logica, 03_seed, 04_testes
+scripts/db.js  npm run db:criar / db:testar
 src/
-  server.js         Express, sessão e rotas
-  db.js             pool do pg + transação que informa o usuário aos triggers
-  erros.js          traduz erros de CHECK/UNIQUE/trigger em mensagens legíveis
-  routes/           auth, painel, desaparecidos, corpos, investigação, domínios
-public/             SPA: index.html, css/style.css, js/ (telas, boneco SVG, utilitários)
+  server.js    Express e sessão
+  db.js        pool do pg + transação que informa o usuário aos triggers
+  erros.js     traduz erros do banco em mensagens legíveis
+  routes/      auth, publico (mural, manifestações), admin
+public/        SPA: index.html, css/style.css, js/ (telas e utilitários)
 ```
-
-## O que o banco faz sozinho (`02_logica.sql`)
-
-| Regra da especificação | Implementação |
-|---|---|
-| Toda mudança de status gera `historico_status` com usuário (seção 8) | `fn_historico_status()` + triggers em `corpo`, `registro_desaparecimento` e `correspondencia`. O usuário vem de `app.id_usuario`, definido pelo backend em cada transação |
-| Rotina de gravação das sugestões com nota ≥ 50 (seção 7) | `fn_gerar_correspondencias()`, que também preenche `correspondencia_sinal` (mesmo lado = similaridade ALTA). Roda a cada cadastro e no botão "Rodar cruzamento" |
-| Ciclo da correspondência | Assumir leva corpo e desaparecido para EM_ANALISE; descartar devolve os dois para a fila se não houver outra apuração aberta; correspondência encerrada não pode ser reaberta |
-| Identificação oficial | Valida os status, marca corpo IDENTIFICADO, desaparecido IDENTIFICADO_OBITO e correspondência CONFIRMADA, e descarta as demais sugestões dos dois |
-| Liberação do corpo | Só para corpo IDENTIFICADO e para um familiar vinculado à pessoa identificada; marca LIBERADO |
-| Protocolo e código IML | Sequências com `fn_novo_protocolo()` (`DES-2026-000045`) e `fn_novo_codigo_iml()` (`IML-2026-000123`) |
-
-As regras do próprio modelo (CHECKs, UNIQUEs, exige justificativa, sinal de um corpo **ou** de um
-desaparecido etc.) continuam no `01_schema.sql`, exatamente como na especificação.
 
 ## API (resumo)
 
-`POST /api/login` · `GET /api/painel` · `GET|POST /api/desaparecidos` · `GET /api/desaparecidos/:id` ·
-`PATCH /api/desaparecidos/:id/status` · `GET|POST /api/corpos` · `GET /api/corpos/:id` ·
-`POST /api/corpos/:id/exames` · `POST /api/cruzamento/rodar` · `GET /api/correspondencias` ·
-`GET|PATCH /api/correspondencias/:id` · `POST /api/correspondencias/:id/analises` ·
-`POST /api/identificacoes` · `POST /api/liberacoes` · `GET /api/dominios` · `POST /api/locais`
+Pública: `GET /api/mural` · `GET /api/mural/filtros` · `GET /api/mural/objetos/:id` ·
+`GET /api/mural/corpos/:id` · `POST /api/manifestacoes` · `POST /api/login`
+
+Administrador (exige login): `GET /api/admin/painel` · `GET|POST|PATCH /api/admin/objetos` ·
+`POST /api/admin/objetos/:id/status` · `GET|POST|PATCH /api/admin/corpos` · `POST /api/admin/corpos/:id/status` ·
+`GET /api/admin/manifestacoes` ·
+`POST /api/admin/manifestacoes/:id/avaliar` · `GET|POST /api/admin/locais`

@@ -41,9 +41,10 @@ async function criar() {
   const { rows } = await client.query(
     `SELECT (SELECT count(*) FROM information_schema.tables
               WHERE table_schema = 'public' AND table_type = 'BASE TABLE') AS tabelas,
-            (SELECT count(*) FROM correspondencia) AS correspondencias`
+            (SELECT count(*) FROM objeto) AS objetos,
+            (SELECT count(*) FROM corpo) AS corpos`
   );
-  console.log(`Pronto: ${rows[0].tabelas} tabelas, ${rows[0].correspondencias} correspondências sugeridas.`);
+  console.log(`Pronto: ${rows[0].tabelas} tabelas, ${rows[0].objetos} objetos, ${rows[0].corpos} corpos.`);
   await client.end();
 }
 
