@@ -1,0 +1,23 @@
+{
+  "name": "achados-e-perdidos-iml",
+  "version": "1.0.0",
+  "description": "Achados e Perdidos do IML — cruzamento de corpos não identificados com pessoas desaparecidas (trabalho acadêmico)",
+  "main": "src/server.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:criar": "node scripts/db.js criar",
+    "db:testar": "node scripts/db.js testar"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "pg": "^8.16.0"
+  }
+}
