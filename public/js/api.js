@@ -28,11 +28,13 @@ export const api = {
   get: (url) => requisicao('GET', url),
   post: (url, corpo) => requisicao('POST', url, corpo || {}),
   patch: (url, corpo) => requisicao('PATCH', url, corpo || {}),
+  delete: (url) => requisicao('DELETE', url),
 };
 
-// Domínios mudam pouco: guardados após a primeira carga
-let dominios = null;
-export async function carregarDominios(forcar = false) {
-  if (!dominios || forcar) dominios = await api.get('/dominios');
-  return dominios;
+
+// Locais mudam pouco: guardados após a primeira carga
+let locais = null;
+export async function carregarLocais(forcar = false) {
+  if (!locais || forcar) locais = await api.get('/admin/locais');
+  return locais;
 }

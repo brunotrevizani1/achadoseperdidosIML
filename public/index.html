@@ -4,45 +4,46 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Achados e Perdidos do IML</title>
-  <meta name="description" content="Sistema de identificação de corpos e pessoas desaparecidas — trabalho acadêmico">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>">
+  <meta name="description" content="Mural público de achados e perdidos do IML — objetos de falecidos e corpos não identificados">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/barraca.css">
 </head>
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
-  <header class="topo" hidden>
+  <header class="topo">
     <div class="topo__interno">
-      <a class="logo" href="#/" aria-label="Painel">
-        <span class="logo__selo" aria-hidden="true">A&amp;P</span>
-        <span class="logo__texto">Achados &amp; Perdidos <b>do IML</b></span>
+      <a class="logo" href="#/" aria-label="Mural">
+        <span class="logo__texto">Achados e Perdidos do IML</span>
       </a>
       <button class="btn-icone topo__menu" aria-label="Abrir menu" aria-expanded="false">☰</button>
       <nav class="nav" aria-label="Principal">
-        <a href="#/" data-rota="painel">Painel</a>
-        <a href="#/desaparecidos" data-rota="desaparecidos">Desaparecidos</a>
-        <a href="#/corpos" data-rota="corpos">Corpos</a>
-        <a href="#/match" data-rota="match">Match do IML</a>
+        <a href="#/" data-rota="mural">Barraca</a>
+        <a href="#/admin" data-rota="painel" data-admin hidden>Painel</a>
+        <a href="#/admin/estoque" data-rota="estoque" data-admin hidden>Estoque</a>
+        <a href="#/admin/manifestacoes" data-rota="manifestacoes" data-admin hidden>Manifestações <span class="aba__n" id="pendentes"></span></a>
       </nav>
       <div class="usuario">
-        <button class="btn-icone" id="tema" aria-label="Alternar tema claro/escuro" title="Plantão diurno/noturno">◐</button>
-        <span class="usuario__cracha" id="cracha"></span>
-        <button class="btn btn--fantasma btn--pequeno" id="sair">Sair</button>
+        <a class="btn btn--fantasma btn--pequeno" id="entrar" href="#/entrar">Área do IML</a>
+        <span class="usuario__cracha" id="cracha" hidden></span>
+        <button class="btn btn--fantasma btn--pequeno" id="sair" hidden>Sair</button>
       </div>
     </div>
   </header>
 
   <main id="conteudo" tabindex="-1"></main>
 
-  <footer class="rodape" hidden>
-    <p>Achados e Perdidos do IML · trabalho acadêmico · dados 100% fictícios.</p>
-    <p class="rodape__piada">Nenhum estagiário foi refrigerado durante o desenvolvimento deste sistema.</p>
+  <footer class="rodape">
+    <p>Achados e Perdidos do IML · trabalho acadêmico · dados fictícios.</p>
   </footer>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three/three.module.js", "three/addons/": "/vendor/three-addons/" } }
+  </script>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>
