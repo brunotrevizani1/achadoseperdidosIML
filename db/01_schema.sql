@@ -38,7 +38,8 @@ CREATE TABLE objeto (
     codigo              VARCHAR(20)  NOT NULL UNIQUE,       -- ex.: OBJ-2026-000012
     tipo                VARCHAR(20)  NOT NULL
                         CHECK (tipo IN ('CELULAR','DOCUMENTO','ALIANCA','MOCHILA','CARTEIRA',
-                                        'JOIA','ROUPA','CHAVES','OUTRO')),
+                                        'JOIA','ROUPA','CHAVES','OCULOS','RELOGIO','CALCADO','BONE',
+                                        'FONE','GUARDA_CHUVA','BOLSA','NOTEBOOK','OUTRO')),
     titulo              VARCHAR(100) NOT NULL,              -- ex.: "Celular Samsung preto"
     descricao           TEXT         NOT NULL,
     id_local            INTEGER      NOT NULL REFERENCES local(id_local),
@@ -61,6 +62,7 @@ CREATE TABLE corpo (
     cor_pele            VARCHAR(20),
     cor_cabelo          VARCHAR(20),
     cor_olhos           VARCHAR(20),
+    tatuagens           VARCHAR(200),                       -- PÚBLICO: onde há tatuagem e o estilo, ex.: BRACO_D:FLORAL,PEITO:CHAMAS
     caracteristicas     TEXT,                               -- PÚBLICO: só traços gerais (roupa, tatuagem, cicatriz)
     observacoes         TEXT,                               -- INTERNO: nunca vai para o mural
     id_local            INTEGER      NOT NULL REFERENCES local(id_local),

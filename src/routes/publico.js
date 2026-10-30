@@ -31,6 +31,7 @@ const resumoCorpo = (c) => ({
   cor_pele: c.cor_pele,
   cor_cabelo: c.cor_cabelo,
   cor_olhos: c.cor_olhos,
+  tatuagens: c.tatuagens,
   caracteristicas: c.caracteristicas,
   local: c.local_nome,
   bairro: c.bairro,

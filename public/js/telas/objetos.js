@@ -11,7 +11,7 @@ export async function novo(main) {
   const locais = await carregarLocais();
   main.innerHTML = String(html`
     <section class="pagina">
-      <a class="voltar" href="#/admin/estoque">← Estoque</a>
+      <a class="voltar" href="#/admin/objetos">← Estoque</a>
       <header class="pagina__topo"><div><h1 class="titulo">Cadastrar objeto</h1></div></header>
       <form id="form-objeto" class="ficha form">
         <div class="campos">
@@ -53,7 +53,7 @@ export async function ficha(main, [id], ctx) {
 
   main.innerHTML = String(html`
     <section class="pagina">
-      <a class="voltar" href="#/admin/estoque">← Estoque</a>
+      <a class="voltar" href="#/admin/objetos">← Estoque</a>
       <header class="pagina__topo">
         <div class="pagina__identidade"><div><h1 class="titulo">${o.titulo}</h1>
             <p class="pagina__sub">${o.codigo} · ${rotulo(o.tipo)} · ${chip(o.status)}</p></div></div>
@@ -111,7 +111,7 @@ export async function ficha(main, [id], ctx) {
     try {
       await api.delete(`/admin/objetos/${id}`);
       toast('Objeto excluído.');
-      location.hash = '#/admin/estoque';
+      location.hash = '#/admin/objetos';
     } catch (e) {
       erroBanco(e);
     }

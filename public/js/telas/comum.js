@@ -1,6 +1,7 @@
 // Componentes compartilhados pelas telas de administrador
 import { api, carregarLocais } from '../api.js';
-import { html, $, $$, opcoes, toast, erroBanco, modalForm, chip, rotulo, dataHora, TIPOS_LOCAL } from '../ui.js';
+import { html, raw, $, $$, opcoes, toast, erroBanco, modalForm, chip, rotulo, dataHora, TIPOS_LOCAL } from '../ui.js';
+import { chaveMini, preencherMiniaturas } from '../tres/miniaturas.js';
 
 const NOVO = '__novo__';
 
@@ -55,29 +56,36 @@ export function seletorLocal(raiz, locais, rotuloCampo) {
 // ---------------------------------------------------------------------
 export function cartaoManifestacao(m) {
   const aberta = ['RECEBIDA', 'EM_ANALISE'].includes(m.status);
-  return html`<article class="manifestacao manifestacao--${m.status.toLowerCase()}">
-    <header>
-      <b>${m.nome}</b> <span class="etiqueta__gaveta">${rotulo(m.parentesco)}</span> ${chip(m.status)}
-      <small>${dataHora(m.criado_em)}</small>
-    </header>
-    ${m.item ? html`<p class="manifestacao__item"><a href="#/admin/${m.e_objeto ? 'objetos' : 'corpos'}/${m.id_objeto || m.id_corpo}">
-      <b>${m.item}</b></a> (${m.codigo_item})</p>` : ''}
-    <blockquote>${m.o_que_reconheceu}</blockquote>
-    <p class="manifestacao__contato">${m.contato}</p>
-    ${m.parecer ? html`<p class="manifestacao__parecer"><b>Parecer${m.avaliador ? ` de ${m.avaliador}` : ''}:</b> ${m.parecer}</p>` : ''}
-    ${aberta
-      ? html`<footer class="manifestacao__acoes">
-          ${m.status === 'RECEBIDA' ? html`<button class="btn btn--pequeno" data-avaliar="EM_ANALISE" data-id="${m.id_manifestacao}">Em análise</button>` : ''}
-          <button class="btn btn--pequeno btn--verde" data-avaliar="ACEITA" data-id="${m.id_manifestacao}"
-            data-eobjeto="${m.id_objeto ? '1' : ''}">Aceitar</button>
-          <button class="btn btn--pequeno btn--perigo" data-avaliar="RECUSADA" data-id="${m.id_manifestacao}">Recusar</button>
-        </footer>`
-      : ''}
+  const item = m.e_objeto
+    ? { tipo: 'objeto', id: m.id_objeto, categoria: m.categoria }
+    : { ...m, tipo: 'corpo', id: m.id_corpo, codigo: m.codigo_item };
+  return html`<article class="manifestacao manifestacao--${m.status.toLowerCase()} ${raw(m.item ? 'manifestacao--mini' : '')}">
+    ${m.item ? html`<div class="manifestacao__figura"><img class="mini" alt="" data-mini="${chaveMini(item)}"></div>` : ''}
+    <div class="manifestacao__conteudo">
+      <header>
+        <b>${m.nome}</b> <span class="etiqueta__gaveta">${rotulo(m.parentesco)}</span> ${chip(m.status)}
+        <small>${dataHora(m.criado_em)}</small>
+      </header>
+      ${m.item ? html`<p class="manifestacao__item"><a href="#/admin/${m.e_objeto ? 'objetos' : 'corpos'}/${m.id_objeto || m.id_corpo}">
+        <b>${m.item}</b></a> (${m.codigo_item})</p>` : ''}
+      <blockquote>${m.o_que_reconheceu}</blockquote>
+      <p class="manifestacao__contato">${m.contato}</p>
+      ${m.parecer ? html`<p class="manifestacao__parecer"><b>Parecer${m.avaliador ? ` de ${m.avaliador}` : ''}:</b> ${m.parecer}</p>` : ''}
+      ${aberta
+        ? html`<footer class="manifestacao__acoes">
+            ${m.status === 'RECEBIDA' ? html`<button class="btn btn--pequeno" data-avaliar="EM_ANALISE" data-id="${m.id_manifestacao}">Em análise</button>` : ''}
+            <button class="btn btn--pequeno btn--verde" data-avaliar="ACEITA" data-id="${m.id_manifestacao}"
+              data-eobjeto="${m.id_objeto ? '1' : ''}">Aceitar</button>
+            <button class="btn btn--pequeno btn--perigo" data-avaliar="RECUSADA" data-id="${m.id_manifestacao}">Recusar</button>
+          </footer>`
+        : ''}
+    </div>
   </article>`;
 }
 
 // Liga os botões dos cartões acima. aoMudar() é chamado depois de cada avaliação.
 export function ligarAvaliacoes(raiz, aoMudar) {
+  preencherMiniaturas(raiz);
   $$('[data-avaliar]', raiz).forEach((b) =>
     b.addEventListener('click', async () => {
       const decisao = b.dataset.avaliar;

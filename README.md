@@ -9,14 +9,16 @@ Todos os dados são fictícios.
 
 - **Banco:** PostgreSQL 14+: 6 tabelas, triggers e índices.
 - **Backend:** Node.js + Express + `pg`.
-- **Frontend:** HTML, CSS e JavaScript puro (sem build), servidos pelo próprio Express. A barraca usa three.js, instalado com `npm install` e servido localmente (sem CDN).
+- **Frontend:** HTML, CSS e JavaScript puro (sem build), servidos pelo próprio Express. A recepção usa three.js, instalado com `npm install` e servido localmente (sem CDN).
 
 ## O que o sistema faz
 
 **Tela pública (sem login)**
-- A tela inicial é uma **barraca em 3D** (three.js) em tela cheia: os objetos ficam no balcão e nas prateleiras, e os corpos não identificados aparecem só pelos pés, sob uma cortina no canto direito. Ao clicar, o item gira e abre em tela grande, com o modelo 3D à esquerda (objeto ou manequim, que dá para girar arrastando) e as informações à direita.
+- A tela inicial é a **recepção do IML em 3D** (three.js) em tela cheia: os objetos ficam no balcão e nas estantes de inox, e os corpos não identificados ficam na **câmara fria**, em gavetas abertas com o corpo coberto por um lençol, só com os pés à mostra e a etiqueta de identificação no dedo. Ao clicar, o item abre em tela grande, com o modelo 3D à esquerda (objeto ou manequim, que dá para girar arrastando) e as informações à direita.
 - Página de cada item, com o botão **Eu conheço / é meu**: a pessoa informa nome,
   contato, parentesco e o que reconheceu. O contato nunca aparece no mural.
+
+**Entrada do administrador:** não há barra de menu. Na recepção há uma **porta com teclado de senha** na ponta esquerda da parede; clicar nela abre um painel 3D de acesso (`admin@iml.demo` / `iml123`) e a câmera avança pela porta até a **sala do administrador**: o painel numa TV na parede, os objetos nas prateleiras (estoque), os corpos na câmara fria e as manifestações numa pasta sobre a mesa. A única saída é a **porta da sala**, que volta à recepção e encerra a sessão.
 
 **Tela de administrador (IML, com login)**
 - Cadastra objetos com descrição, local e data em que foram encontrados.
@@ -60,7 +62,7 @@ Abra <http://localhost:3000>. O mural é público; a **Área do IML** pede login
 
 ## Roteiro de demonstração
 
-1. **Barraca** (sem login): passe o mouse nos itens e clique em um deles para vê-lo em 3D e em tela grande.
+1. **Recepção** (sem login): passe o mouse nos itens e clique em um deles para vê-lo em 3D e em tela grande.
 2. Abra um item e clique em **Eu conheço / é meu**; preencha e envie.
 3. **Área do IML** → *Painel*: a fila de manifestações mostra o novo envio.
 4. *Manifestações* → **Aceitar** a da aliança, com parecer: o objeto vira **devolvido**, sai do mural e as outras

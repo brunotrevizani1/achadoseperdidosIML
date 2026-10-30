@@ -1,7 +1,9 @@
 import { api, carregarLocais } from '../api.js';
 import {
-  html, raw, $, $$, chip, data, toast, erroBanco, modalForm, linhaDoTempo, rotulo, SEXO, hoje,
+  html, raw, $, $$, chip, data, toast, erroBanco, modalForm, linhaDoTempo, rotulo, SEXO, hoje, opcoes,
+  COR_PELE, COR_CABELO, TAMANHO_CABELO, COR_OLHOS, LOCAIS_TATUAGEM, ESTILOS_TATUAGEM, rotuloTatuagens,
 } from '../ui.js';
+import { mostrarModelo } from '../tres/visor3d.js';
 import { seletorLocal, cartaoManifestacao, ligarAvaliacoes } from './comum.js';
 
 
@@ -14,11 +16,12 @@ export async function novo(main) {
   const locais = await carregarLocais();
   main.innerHTML = String(html`
     <section class="pagina">
-      <a class="voltar" href="#/admin/estoque">← Estoque</a>
+      <a class="voltar" href="#/admin/corpos">← Câmara fria</a>
       <header class="pagina__topo"><div><h1 class="titulo">Cadastrar corpo</h1></div></header>
       <form id="form-corpo" class="ficha form">
         <fieldset>
-          <legend>Estimativas</legend>
+          <legend>Estimativas e aparência</legend>
+          <div class="aparencia">
           <div class="campos">
             <label>Sexo*
               <select name="sexo" required><option value="">—</option><option value="M">Masculino</option>
@@ -26,9 +29,21 @@ export async function novo(main) {
             <label>Idade mínima <input name="idade_estimada_min" type="number" min="0" max="120"></label>
             <label>Idade máxima <input name="idade_estimada_max" type="number" min="0" max="120"></label>
             <label>Altura (cm) <input name="altura_estimada_cm" type="number" min="30" max="250"></label>
-            <label>Cor da pele <input name="cor_pele" maxlength="20"></label>
-            <label>Cor do cabelo <input name="cor_cabelo" maxlength="20"></label>
-            <label>Cor dos olhos <input name="cor_olhos" maxlength="20"></label>
+            <label>Cor da pele <select name="cor_pele"><option value="">—</option>${opcoes(COR_PELE)}</select></label>
+            <label>Cor dos olhos <select name="cor_olhos"><option value="">—</option>${opcoes(COR_OLHOS)}</select></label>
+            <label>Cor do cabelo <select name="cabelo_cor"><option value="">—</option>${opcoes(COR_CABELO)}</select></label>
+            <label>Tamanho do cabelo <select name="cabelo_tam"><option value="">—</option>${opcoes(TAMANHO_CABELO)}</select></label>
+            <div class="largo tatuagem">
+              <label class="check"><input type="checkbox" id="tem-tatuagem"> Tem tatuagem</label>
+              <div class="tatuagem__locais" hidden>
+                ${LOCAIS_TATUAGEM.map((k) => html`<div class="tatuagem__linha">
+                  <label class="check"><input type="checkbox" name="tat" value="${k}"> ${rotulo(k)}</label>
+                  <select name="tat_${k}" aria-label="Estilo da tatuagem: ${rotulo(k)}" disabled>${opcoes(ESTILOS_TATUAGEM)}</select>
+                </div>`)}
+              </div>
+            </div>
+          </div>
+          <div class="previa" id="previa" role="img" aria-label="Pré-visualização do boneco"></div>
           </div>
         </fieldset>
         <fieldset>
@@ -56,9 +71,52 @@ export async function novo(main) {
 
   const form = $('#form-corpo', main);
   const local = seletorLocal($('#local', main), locais, 'Local onde foi encontrado');
+
+  // cabelo = cor + tamanho ("Loiro, longo"); careca não tem tamanho
+  const cabelo = (d) => (d.cabelo_cor === 'Careca' || !d.cabelo_tam ? d.cabelo_cor : `${d.cabelo_cor || ''}, ${d.cabelo_tam.toLowerCase()}`.replace(/^, /, ''));
+  // um item por local marcado, com o estilo escolhido: "BRACO_D:FLORAL,PEITO:CHAMAS"
+  const tatuagens = (fd) => fd.getAll('tat').map((k) => `${k}:${fd.get(`tat_${k}`) || 'TRIBAL'}`).join(',');
+  const lerAparencia = () => {
+    const fd = new FormData(form);
+    const d = Object.fromEntries(fd);
+    return { tipo: 'corpo', id: 0, sexo: d.sexo || 'I', cor_pele: d.cor_pele, cor_cabelo: cabelo(d), cor_olhos: d.cor_olhos, tatuagens: tatuagens(fd) };
+  };
+
+  const temTatuagem = $('#tem-tatuagem', main);
+  const locaisTatuagem = $('.tatuagem__locais', main);
+  const ligarEstilos = () => $$('[name=tat]', form).forEach((c) => {
+    $(`[name=tat_${c.value}]`, form).disabled = !c.checked; // o estilo só vale para o local marcado
+  });
+  temTatuagem.addEventListener('change', () => {
+    locaisTatuagem.hidden = !temTatuagem.checked;
+    if (!temTatuagem.checked) $$('[name=tat]', form).forEach((c) => (c.checked = false));
+    ligarEstilos();
+  });
+  $$('[name=tat]', form).forEach((c) => c.addEventListener('change', ligarEstilos));
+
+  // o boneco muda na hora conforme as escolhas
+  let previa = null;
+  try {
+    previa = mostrarModelo($('#previa', main), lerAparencia());
+  } catch {
+    $('#previa', main).hidden = true; // sem WebGL: o cadastro funciona do mesmo jeito
+  }
+  let espera;
+  const atualizarPrevia = () => {
+    clearTimeout(espera);
+    espera = setTimeout(() => previa?.atualizar(lerAparencia()), 120);
+  };
+  form.addEventListener('input', atualizarPrevia);
+  form.addEventListener('change', atualizarPrevia);
+  window.addEventListener('hashchange', () => previa?.(), { once: true });
+
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const dados = Object.fromEntries(new FormData(form));
+    const fd = new FormData(form);
+    const dados = Object.fromEntries(fd);
+    dados.cor_cabelo = cabelo(dados);
+    dados.tatuagens = tatuagens(fd);
+    Object.keys(dados).filter((k) => ['cabelo_cor', 'cabelo_tam', 'tat'].includes(k) || k.startsWith('tat_')).forEach((k) => delete dados[k]);
     if (dados.idade_estimada_min && dados.idade_estimada_max &&
         Number(dados.idade_estimada_min) > Number(dados.idade_estimada_max)) {
       return toast('A idade mínima está maior que a máxima.', 'erro');
@@ -84,7 +142,7 @@ export async function ficha(main, [id], ctx) {
 
   main.innerHTML = String(html`
     <section class="pagina">
-      <a class="voltar" href="#/admin/estoque">← Estoque</a>
+      <a class="voltar" href="#/admin/corpos">← Câmara fria</a>
       <header class="pagina__topo">
         <div class="pagina__identidade"><div><h1 class="titulo">${c.codigo_iml}</h1>
             <p class="pagina__sub">${situacao(c)}</p></div></div>
@@ -99,6 +157,9 @@ export async function ficha(main, [id], ctx) {
 
       <div class="duas-colunas">
         <div class="coluna">
+          <section class="ficha ficha--previa">
+            <div class="previa" id="previa" role="img" aria-label="Boneco do corpo"></div>
+          </section>
           <section class="ficha">
             <h2 class="subtitulo">Características</h2>
             <dl class="dados">
@@ -106,6 +167,7 @@ export async function ficha(main, [id], ctx) {
               <dt>Idade estimada</dt><dd>${c.idade_estimada_min != null ? `${c.idade_estimada_min} a ${c.idade_estimada_max ?? '?'} anos` : '—'}</dd>
               <dt>Altura</dt><dd>${c.altura_estimada_cm ? `${c.altura_estimada_cm} cm` : '—'}</dd>
               <dt>Aparência</dt><dd>${[c.cor_pele, c.cor_cabelo, c.cor_olhos].filter(Boolean).join(' · ') || '—'}</dd>
+              <dt>Tatuagem</dt><dd>${rotuloTatuagens(c.tatuagens) || 'Nenhuma informada'}</dd>
               <dt>Detalhes</dt><dd>${c.caracteristicas || '—'}</dd>
             </dl>
           </section>
@@ -139,6 +201,13 @@ export async function ficha(main, [id], ctx) {
 
   ligarAvaliacoes(main, ctx.recarregar);
 
+  try {
+    const boneco = mostrarModelo($('#previa', main), { ...c, tipo: 'corpo', id: c.id_corpo });
+    window.addEventListener('hashchange', () => boneco(), { once: true });
+  } catch {
+    $('#previa', main).hidden = true;
+  }
+
   const mudar = async (status, titulo, confirmar) => {
     const dados = await modalForm({
       titulo, confirmar,
@@ -158,7 +227,7 @@ export async function ficha(main, [id], ctx) {
     try {
       await api.delete(`/admin/corpos/${id}`);
       toast('Corpo excluído.');
-      location.hash = '#/admin/estoque';
+      location.hash = '#/admin/corpos';
     } catch (e) {
       erroBanco(e);
     }
