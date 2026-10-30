@@ -1,11 +1,14 @@
 import { api } from '../api.js';
-import { html, raw, $, $$, chip, data, rotulo, SEXO } from '../ui.js';
+import { html, $, $$, chip, data, rotulo, SEXO } from '../ui.js';
+import { chaveMini, preencherMiniaturas } from '../tres/miniaturas.js';
 
 const SITUACOES = [['', 'Todos'], ['aberto', 'Em aberto'], ['encerrado', 'Devolvidos / identificados']];
 let fecharAnterior = () => {};
-const TIPOS = [['', 'Tudo'], ['objeto', 'Objetos'], ['corpo', 'Corpos']];
+
+const miniatura = (item) => html`<span class="cartao__figura"><img class="mini" alt="" data-mini="${chaveMini(item)}"></span>`;
 
 const cartaoObjeto = (o) => html`<a class="cartao" href="#/admin/objetos/${o.id_objeto}">
+  ${miniatura({ tipo: 'objeto', id: o.id_objeto, categoria: o.tipo })}
   <span class="cartao__corpo">
     <span class="cartao__tipo">Objeto · ${rotulo(o.tipo)}</span>
     <b class="cartao__titulo">${o.titulo}</b>
@@ -16,6 +19,7 @@ const cartaoObjeto = (o) => html`<a class="cartao" href="#/admin/objetos/${o.id_
   </span></a>`;
 
 const cartaoCorpo = (c) => html`<a class="cartao" href="#/admin/corpos/${c.id_corpo}">
+  ${miniatura({ ...c, tipo: 'corpo', id: c.id_corpo, codigo: c.codigo_iml })}
   <span class="cartao__corpo">
     <span class="cartao__tipo">Corpo${c.gaveta_camara ? ` · Gaveta ${c.gaveta_camara}` : ''}</span>
     <b class="cartao__titulo">${SEXO[c.sexo]}${c.idade_estimada_min != null ? `, ${c.idade_estimada_min}–${c.idade_estimada_max ?? '?'} anos` : ''}</b>
@@ -25,24 +29,20 @@ const cartaoCorpo = (c) => html`<a class="cartao" href="#/admin/corpos/${c.id_co
       <span class="cartao__meta">${data(c.data_encontrado)}</span></span>
   </span></a>`;
 
+// O estoque tem duas telas separadas, como no cenário: as prateleiras (objetos) e a câmara fria (corpos)
 export async function lista(main) {
-  const [objetos, corpos] = await Promise.all([api.get('/admin/objetos'), api.get('/admin/corpos')]);
-  const itens = [
-    ...objetos.map((o) => ({ tipo: 'objeto', encerrado: o.status === 'DEVOLVIDO', data: o.data_encontrado, card: cartaoObjeto(o) })),
-    ...corpos.map((c) => ({ tipo: 'corpo', encerrado: c.status === 'IDENTIFICADO', data: c.data_encontrado, card: cartaoCorpo(c) })),
-  ].sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const corpos = location.hash.endsWith('/corpos');
+  const itens = corpos
+    ? (await api.get('/admin/corpos')).map((c) => ({ encerrado: c.status === 'IDENTIFICADO', data: c.data_encontrado, card: cartaoCorpo(c) }))
+    : (await api.get('/admin/objetos')).map((o) => ({ encerrado: o.status === 'DEVOLVIDO', data: o.data_encontrado, card: cartaoObjeto(o) }));
+  itens.sort((a, b) => String(b.data).localeCompare(String(a.data)));
 
-  let tipo = location.hash.endsWith('/objetos') ? 'objeto' : location.hash.endsWith('/corpos') ? 'corpo' : '';
   main.innerHTML = String(html`
     <section class="pagina">
       <header class="pagina__topo">
-        <h1 class="titulo">Estoque</h1>
+        <h1 class="titulo">${corpos ? 'Câmara fria · corpos' : 'Estoque · objetos'}</h1>
       </header>
       <div class="filtros">
-        <div class="abas" role="tablist">
-          ${TIPOS.map(([v, r]) => html`<button role="tab" class="aba ${raw(v === tipo ? 'ativa' : '')}"
-              aria-selected="${v === tipo}" data-tipo="${v}">${r}</button>`)}
-        </div>
         <div class="filtro-menu">
           <button type="button" class="btn btn--icone" id="filtro" aria-haspopup="true" aria-expanded="false"
             aria-label="Filtrar por situação" title="Filtrar por situação">
@@ -55,9 +55,11 @@ export async function lista(main) {
                 aria-checked="${v === ''}">${r}</button>`)}
           </div>
         </div>
+        <span class="filtros__contagem" id="contagem"></span>
         <div class="pagina__acoes filtros__novo">
-          <a class="btn btn--primario" href="#/admin/objetos/novo">+ Objeto</a>
-          <a class="btn btn--primario" href="#/admin/corpos/novo">+ Corpo</a>
+          ${corpos
+            ? html`<a class="btn btn--primario" href="#/admin/corpos/novo">+ Corpo</a>`
+            : html`<a class="btn btn--primario" href="#/admin/objetos/novo">+ Objeto</a>`}
         </div>
       </div>
       <div class="cartoes" id="lista"></div>
@@ -72,23 +74,13 @@ export async function lista(main) {
     botao.setAttribute('aria-expanded', String(aberto));
   };
   const mostrar = () => {
-    const f = itens.filter((i) =>
-      (!tipo || i.tipo === tipo) &&
-      (!situacao || (situacao === 'encerrado') === i.encerrado));
+    const f = itens.filter((i) => !situacao || (situacao === 'encerrado') === i.encerrado);
+    $('#contagem', main).textContent = `${f.length} ${f.length === 1 ? 'item' : 'itens'}`;
     caixa.innerHTML = f.length
       ? String(html`${f.map((i) => i.card)}`)
       : String(html`<p class="vazio">Nada por aqui.</p>`);
+    preencherMiniaturas(caixa);
   };
-  $$('.aba', main).forEach((b) =>
-    b.addEventListener('click', () => {
-      tipo = b.dataset.tipo;
-      $$('.aba', main).forEach((x) => {
-        x.classList.toggle('ativa', x === b);
-        x.setAttribute('aria-selected', String(x === b));
-      });
-      mostrar();
-    })
-  );
   botao.addEventListener('click', (ev) => {
     ev.stopPropagation();
     abrir(menu.hidden);

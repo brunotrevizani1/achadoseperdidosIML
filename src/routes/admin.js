@@ -167,6 +167,18 @@ router.get('/corpos/:id', async (req, res) => {
   res.json({ ...rows[0], manifestacoes, historico: hist, objetos: objetos.rows });
 });
 
+const LOCAIS_TATUAGEM = ['BRACO_D', 'BRACO_E', 'PERNA_D', 'PERNA_E', 'PEITO', 'ABDOME', 'COSTAS', 'PESCOCO'];
+const ESTILOS_TATUAGEM = ['TRIBAL', 'FLORAL', 'GEOMETRICO', 'CHAMAS', 'ESTRELAS'];
+// "BRACO_D:FLORAL,xx,PEITO" -> "BRACO_D:FLORAL,PEITO:TRIBAL" (só locais e estilos conhecidos, um estilo por local); vazio vira null
+const tatuagens = (v) => {
+  const porLocal = new Map();
+  String(v || '').split(',').forEach((tok) => {
+    const [local, estilo] = tok.split(':').map((s) => s.trim());
+    if (LOCAIS_TATUAGEM.includes(local)) porLocal.set(local, ESTILOS_TATUAGEM.includes(estilo) ? estilo : 'TRIBAL');
+  });
+  return vazio([...porLocal].map(([l, e]) => `${l}:${e}`).join(','));
+};
+
 router.post('/corpos', async (req, res) => {
   const b = req.body || {};
   if (!['M', 'F', 'I'].includes(b.sexo) || !b.id_local || !vazio(b.data_encontrado)) {
@@ -176,11 +188,11 @@ router.post('/corpos', async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO corpo (sexo, idade_estimada_min, idade_estimada_max, altura_estimada_cm, cor_pele, cor_cabelo,
                           cor_olhos, caracteristicas, observacoes, id_local, data_encontrado, gaveta_camara,
-                          id_usuario_cadastro)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id_corpo, codigo_iml`,
+                          id_usuario_cadastro, tatuagens)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id_corpo, codigo_iml`,
       [b.sexo, numero(b.idade_estimada_min), numero(b.idade_estimada_max), numero(b.altura_estimada_cm),
        vazio(b.cor_pele), vazio(b.cor_cabelo), vazio(b.cor_olhos), vazio(b.caracteristicas), vazio(b.observacoes),
-       b.id_local, b.data_encontrado, vazio(b.gaveta_camara), quem(req)]
+       b.id_local, b.data_encontrado, vazio(b.gaveta_camara), quem(req), tatuagens(b.tatuagens)]
     );
     return rows[0];
   });
@@ -193,11 +205,11 @@ router.patch('/corpos/:id', async (req, res) => {
     db.query(
       `UPDATE corpo SET idade_estimada_min = $2, idade_estimada_max = $3, altura_estimada_cm = $4,
               cor_pele = $5, cor_cabelo = $6, cor_olhos = $7, caracteristicas = $8, observacoes = $9,
-              gaveta_camara = $10
+              gaveta_camara = $10, tatuagens = $11
         WHERE id_corpo = $1`,
       [req.params.id, numero(b.idade_estimada_min), numero(b.idade_estimada_max), numero(b.altura_estimada_cm),
        vazio(b.cor_pele), vazio(b.cor_cabelo), vazio(b.cor_olhos), vazio(b.caracteristicas), vazio(b.observacoes),
-       vazio(b.gaveta_camara)]
+       vazio(b.gaveta_camara), tatuagens(b.tatuagens)]
     )
   );
   res.json({ ok: true });
@@ -235,7 +247,8 @@ router.get('/manifestacoes', async (req, res) => {
   const { status } = req.query;
   const { rows } = await query(
     `SELECT m.*, (m.id_objeto IS NOT NULL) AS e_objeto, COALESCE(o.titulo, c.codigo_iml) AS item,
-            COALESCE(o.codigo, c.codigo_iml) AS codigo_item, u.nome AS avaliador
+            COALESCE(o.codigo, c.codigo_iml) AS codigo_item, u.nome AS avaliador,
+            o.tipo AS categoria, c.sexo, c.cor_pele, c.cor_cabelo, c.cor_olhos, c.tatuagens
        FROM manifestacao m
        LEFT JOIN objeto o ON o.id_objeto = m.id_objeto
        LEFT JOIN corpo c ON c.id_corpo = m.id_corpo

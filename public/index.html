@@ -14,27 +14,8 @@
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
-  <header class="topo">
-    <div class="topo__interno">
-      <a class="logo" href="#/" aria-label="Mural">
-        <span class="logo__texto">Achados e Perdidos do IML</span>
-      </a>
-      <button class="btn-icone topo__menu" aria-label="Abrir menu" aria-expanded="false">☰</button>
-      <nav class="nav" aria-label="Principal">
-        <a href="#/" data-rota="mural">Barraca</a>
-        <a href="#/admin" data-rota="painel" data-admin hidden>Painel</a>
-        <a href="#/admin/estoque" data-rota="estoque" data-admin hidden>Estoque</a>
-        <a href="#/admin/manifestacoes" data-rota="manifestacoes" data-admin hidden>Manifestações <span class="aba__n" id="pendentes"></span></a>
-      </nav>
-      <div class="usuario">
-        <a class="btn btn--fantasma btn--pequeno" id="entrar" href="#/entrar">Área do IML</a>
-        <span class="usuario__cracha" id="cracha" hidden></span>
-        <button class="btn btn--fantasma btn--pequeno" id="sair" hidden>Sair</button>
-      </div>
-    </div>
-  </header>
-
   <main id="conteudo" tabindex="-1"></main>
+  <div id="fade" aria-hidden="true"></div>
 
   <footer class="rodape">
     <p>Achados e Perdidos do IML · trabalho acadêmico · dados fictícios.</p>

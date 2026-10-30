@@ -25,13 +25,15 @@ export function mostrarModelo(container, item) {
   sol.shadow.mapSize.set(1024, 1024);
   Object.assign(sol.shadow.camera, { left: -1.5, right: 1.5, top: 2.6, bottom: -2, near: 0.5, far: 14 });
   sol.shadow.bias = -0.0005;
-  scene.add(sol, new THREE.HemisphereLight('#cfe6ff', '#8a7a68', 0.5));
+  const recorte = new THREE.DirectionalLight('#bcd6ff', 0.9); // luz de contorno, separa o boneco do fundo
+  recorte.position.set(-3, 3, -3);
+  scene.add(sol, recorte, new THREE.HemisphereLight('#cfe6ff', '#8a7a68', 0.5));
 
   const tipo = item.tipo === 'corpo' ? 'PESSOA' : item.categoria;
-  const modelo = criarModelo(tipo, item, tipo === 'PESSOA' ? 2.1 : 1.6);
+  let modelo = criarModelo(tipo, item, tipo === 'PESSOA' ? 2.1 : 1.6);
   const pedestal = new THREE.Mesh(
     new THREE.CylinderGeometry(1.05, 1.1, 0.12, 64),
-    new THREE.MeshStandardMaterial({ color: '#c9a574', roughness: 0.6 })
+    new THREE.MeshStandardMaterial({ color: '#b9c4c9', metalness: 0.85, roughness: 0.35 })
   );
   pedestal.position.y = -0.06;
   pedestal.receiveShadow = true;
@@ -93,7 +95,7 @@ export function mostrarModelo(container, item) {
     renderer.render(scene, camera);
   });
 
-  return () => {
+  const encerrar = () => {
     renderer.setAnimationLoop(null);
     observador.disconnect();
     scene.traverse((o) => {
@@ -107,4 +109,19 @@ export function mostrarModelo(container, item) {
     renderer.dispose();
     canvas.remove();
   };
+  // troca o boneco/objeto mostrado (mesmo tipo), mantendo o giro atual
+  encerrar.atualizar = (novoItem) => {
+    mesa.remove(modelo);
+    modelo.traverse((o) => {
+      if (!o.isMesh) return;
+      o.geometry?.dispose();
+      [].concat(o.material).forEach((m) => {
+        m.map?.dispose();
+        m.dispose();
+      });
+    });
+    modelo = criarModelo(tipo, novoItem, tipo === 'PESSOA' ? 2.1 : 1.6);
+    mesa.add(modelo);
+  };
+  return encerrar;
 }

@@ -72,6 +72,30 @@ BEGIN
             l_canoas, CURRENT_DATE - 60, now() - interval '60 days', NULL)
     RETURNING id_corpo INTO k5;
 
+    -- Mais corpos não identificados, para o mural ficar cheio
+    INSERT INTO corpo (sexo, idade_estimada_min, idade_estimada_max, altura_estimada_cm, cor_pele, cor_cabelo, cor_olhos,
+                       caracteristicas, observacoes, id_local, data_encontrado, data_entrada, gaveta_camara)
+    SELECT v.sexo, v.imin, v.imax, v.altura, v.pele, v.cabelo, v.olhos, v.carac, v.obs,
+           (SELECT id_local FROM local WHERE nome = v.local), CURRENT_DATE - v.dias, now() - (v.dias || ' days')::interval, v.gaveta
+    FROM (VALUES
+        ('M'::char, 25, 35, 175, 'Parda',   'Castanho, curto', 'Castanhos', 'Camiseta preta, bermuda de nylon, relógio digital no pulso esquerdo.', 'Encontrado por ciclista.', 'Orla do Guaíba', 33, 'A-03'),
+        ('F'::char, 20, 28, 165, 'Branca',  'Loiro, longo',    'Azuis',     'Jaqueta jeans, calça preta, brinco de argola, tatuagem de borboleta no tornozelo.', 'Sem documentos.', 'Rodoviária', 27, 'A-04'),
+        ('M'::char, 60, 75, 170, 'Branca',  'Grisalho',        'Castanhos', 'Camisa social bege, calça de tecido, cicatriz no abdômen.', 'Possível morador de rua.', 'Mercado Público', 24, 'A-05'),
+        ('F'::char, 45, 55, 158, 'Negra',   'Preto, curto',    'Castanhos', 'Vestido azul, sandálias, aliança na mão direita.', NULL, 'Estação Mathias Velho', 19, 'A-06'),
+        ('M'::char, 30, 40, 182, 'Parda',   'Preto, curto',    'Castanhos', 'Camiseta branca, calça jeans, tênis preto, tatuagem de âncora no braço direito.', 'Boletim 2026/1302.', 'BR-116 km 247', 15, 'B-01'),
+        ('F'::char, 15, 20, 162, 'Branca',  'Ruivo, longo',    'Verdes',    'Moletom vermelho, calça legging, tênis com cadarço rosa.', 'Aguardando confronto de digitais.', 'Parque da Redenção', 12, 'B-02'),
+        ('M'::char, 50, 60, 174, 'Negra',   'Grisalho',        'Castanhos', 'Camisa polo verde, calça de sarja, chinelo.', NULL, 'Arroio Luiz Rau', 7, 'B-05'),
+        ('I'::char, 20, 40, NULL, NULL,     NULL,              NULL,        'Roupas rasgadas, sem características aparentes.', 'Estado avançado de decomposição.', 'Rodoviária', 5, 'B-06'),
+        ('M'::char, 22, 30, 169, 'Amarela', 'Preto, curto',    'Pretos',    'Camiseta cinza, jaqueta corta-vento, cicatriz no queixo.', NULL, 'Orla do Guaíba', 2, 'C-01')
+    ) AS v(sexo, imin, imax, altura, pele, cabelo, olhos, carac, obs, local, dias, gaveta);
+
+    -- Onde há tatuagem (o boneco do mural mostra)
+    UPDATE corpo SET tatuagens = 'BRACO_D:FLORAL' WHERE id_corpo = k2;
+    UPDATE corpo SET tatuagens = 'BRACO_D:TRIBAL,PEITO:GEOMETRICO' WHERE caracteristicas LIKE '%âncora no braço direito%';
+    UPDATE corpo SET tatuagens = 'PERNA_E:FLORAL' WHERE caracteristicas LIKE '%borboleta no tornozelo%';
+    UPDATE corpo SET tatuagens = 'COSTAS:CHAMAS,BRACO_E:CHAMAS' WHERE caracteristicas LIKE '%cicatriz no queixo%';
+    UPDATE corpo SET tatuagens = 'PESCOCO:ESTRELAS,PERNA_D:ESTRELAS' WHERE caracteristicas LIKE '%legging%';
+
     -- Objetos
     INSERT INTO objeto (tipo, titulo, descricao, id_local, data_encontrado, id_corpo)
     VALUES ('CELULAR', 'Celular Samsung preto',
@@ -101,6 +125,23 @@ BEGIN
     VALUES ('JOIA', 'Relógio de pulso analógico',
             'Relógio Technos prateado, pulseira de metal, parado às 3h40.',
             l_br116, CURRENT_DATE - 9, k3) RETURNING id_objeto INTO o_relogio;
+
+    -- Mais objetos, de várias categorias
+    INSERT INTO objeto (tipo, titulo, descricao, id_local, data_encontrado)
+    SELECT v.tipo, v.titulo, v.descricao, (SELECT id_local FROM local WHERE nome = v.local), CURRENT_DATE - v.dias
+    FROM (VALUES
+        ('OCULOS',       'Óculos de grau armação preta', 'Armação preta retangular com lentes de grau, haste direita colada com fita adesiva.', 'Mercado Público', 12),
+        ('RELOGIO',      'Relógio de pulso com pulseira de couro', 'Mostrador branco, pulseira de couro marrom, inscrição "Para Ana, 1998" na parte de trás.', 'Rodoviária', 17),
+        ('CALCADO',      'Tênis branco tamanho 42', 'Tênis branco com detalhes azuis, só o pé esquerdo, solado gasto.', 'BR-116 km 247', 8),
+        ('BONE',         'Boné vermelho', 'Boné vermelho de aba curva, com emblema bordado de time de futebol.', 'Estação Mathias Velho', 16),
+        ('FONE',         'Fone de ouvido sem fio', 'Headphone preto bluetooth, almofada esquerda rasgada.', 'Parque da Redenção', 6),
+        ('GUARDA_CHUVA', 'Guarda-chuva preto automático', 'Guarda-chuva azul-marinho quase preto, cabo de madeira curvo.', 'Rodoviária', 4),
+        ('BOLSA',        'Bolsa de couro vinho', 'Bolsa feminina vinho com fecho dourado. Dentro: batom, lenços e um molho de chaves.', 'Mercado Público', 11),
+        ('NOTEBOOK',     'Notebook cinza sem carregador', 'Notebook de 14 polegadas, tampa cinza com adesivo de linguagem de programação.', 'Estação Mathias Velho', 3),
+        ('CELULAR',      'Celular Motorola azul', 'Moto G azul com capinha preta, bateria descarregada.', 'Parque da Redenção', 5),
+        ('MOCHILA',      'Mochila preta esportiva', 'Mochila preta com detalhes laranja, contendo roupas de academia e uma toalha.', 'Orla do Guaíba', 9),
+        ('ROUPA',        'Moletom cinza com capuz', 'Moletom cinza, tamanho M, com manchas escuras na manga.', 'BR-116 km 247', 10)
+    ) AS v(tipo, titulo, descricao, local, dias);
 
     -- Chaves já devolvidas (caso encerrado)
     PERFORM set_config('app.observacao', 'Entregue à irmã, com termo assinado', true);

@@ -52,6 +52,14 @@ export const ROTULOS = {
   JOIA: 'Joia / relógio',
   ROUPA: 'Roupa',
   CHAVES: 'Chaves',
+  OCULOS: 'Óculos',
+  RELOGIO: 'Relógio',
+  CALCADO: 'Calçado',
+  BONE: 'Boné',
+  FONE: 'Fone de ouvido',
+  GUARDA_CHUVA: 'Guarda-chuva',
+  BOLSA: 'Bolsa',
+  NOTEBOOK: 'Notebook',
   OUTRO: 'Outro',
   MAE: 'Mãe',
   IRMAO: 'Irmão',
@@ -65,16 +73,42 @@ export const ROTULOS = {
   HOSPITAL: 'Hospital',
   RODOVIA: 'Rodovia',
   ESTABELECIMENTO: 'Estabelecimento',
+  BRACO_D: 'Braço direito',
+  BRACO_E: 'Braço esquerdo',
+  PERNA_D: 'Perna direita',
+  PERNA_E: 'Perna esquerda',
+  PEITO: 'Peito',
+  ABDOME: 'Abdômen',
+  COSTAS: 'Costas',
+  PESCOCO: 'Pescoço',
+  TRIBAL: 'Tribal',
+  FLORAL: 'Floral',
+  GEOMETRICO: 'Geométrica',
+  CHAMAS: 'Chamas',
+  ESTRELAS: 'Estrelas',
 };
 export const rotulo = (v) =>
   ROTULOS[v] || (v ? String(v).charAt(0) + String(v).slice(1).replaceAll('_', ' ').toLowerCase() : '—');
 
-export const TIPOS_OBJETO = ['CELULAR', 'DOCUMENTO', 'ALIANCA', 'MOCHILA', 'CARTEIRA', 'JOIA', 'ROUPA', 'CHAVES', 'OUTRO'];
+export const TIPOS_OBJETO = ['CELULAR', 'DOCUMENTO', 'ALIANCA', 'MOCHILA', 'CARTEIRA', 'JOIA', 'ROUPA', 'CHAVES',
+  'OCULOS', 'RELOGIO', 'CALCADO', 'BONE', 'FONE', 'GUARDA_CHUVA', 'BOLSA', 'NOTEBOOK', 'OUTRO'];
 export const PARENTESCOS = ['CONJUGE', 'PAI', 'MAE', 'FILHO', 'FILHA', 'IRMAO', 'IRMA', 'AVO', 'NETO',
   'TIO', 'SOBRINHO', 'PRIMO', 'AMIGO', 'VIZINHO', 'OUTRO'];
 export const TIPOS_LOCAL = ['VIA_PUBLICA', 'RESIDENCIA', 'RIO_LAGO', 'MATA', 'HOSPITAL', 'RODOVIA',
   'ESTABELECIMENTO', 'OUTRO'];
 export const SEXO = { M: 'Masculino', F: 'Feminino', I: 'Indeterminado' };
+// Opções do cadastro de aparência (o boneco 3D entende estes nomes)
+export const COR_PELE = ['Branca', 'Parda', 'Negra', 'Amarela', 'Indígena'];
+export const COR_CABELO = ['Preto', 'Castanho', 'Loiro', 'Ruivo', 'Grisalho', 'Branco', 'Careca'];
+export const TAMANHO_CABELO = ['Curto', 'Longo'];
+export const COR_OLHOS = ['Castanhos', 'Pretos', 'Azuis', 'Verdes', 'Mel', 'Cinzentos'];
+export const LOCAIS_TATUAGEM = ['BRACO_D', 'BRACO_E', 'PERNA_D', 'PERNA_E', 'PEITO', 'ABDOME', 'COSTAS', 'PESCOCO'];
+export const ESTILOS_TATUAGEM = ['TRIBAL', 'FLORAL', 'GEOMETRICO', 'CHAMAS', 'ESTRELAS'];
+// "BRACO_D:FLORAL,PEITO" -> "Braço direito (Floral), Peito (Tribal)"
+export const rotuloTatuagens = (v) => String(v || '').split(',').filter(Boolean).map((tok) => {
+  const [local, estilo] = tok.split(':');
+  return `${rotulo(local)} (${rotulo(estilo || 'TRIBAL')})`;
+}).join(', ');
 
 export const chip = (status) => html`<span class="chip chip--${(status || '').toLowerCase()}">${rotulo(status)}</span>`;
 

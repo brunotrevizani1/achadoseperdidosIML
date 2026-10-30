@@ -1,8 +1,13 @@
 import { api } from '../api.js';
-import { html, raw, chip, rotulo } from '../ui.js';
+import { html, raw, $, chip, rotulo } from '../ui.js';
+import { montarCamara } from '../tres/camara3d.js';
 
 export async function render(main, params, ctx) {
-  const p = await api.get('/admin/painel');
+  const [p, todosCorpos] = await Promise.all([api.get('/admin/painel'), api.get('/admin/corpos')]);
+  const gavetas = todosCorpos
+    .filter((c) => c.status === 'NAO_IDENTIFICADO')
+    .map((c) => ({ ...c, tipo: 'corpo', id: c.id_corpo, codigo: c.codigo_iml }));
+  const capacidade = Math.max(3, Math.ceil(gavetas.length / 4)) * 4;
   const n = (grupo, ...chaves) => chaves.reduce((t, k) => t + (p[grupo][k] || 0), 0);
 
   const stats = [
@@ -27,6 +32,21 @@ export async function render(main, params, ctx) {
             <span class="stat__nome">${nome}</span></a>`
         )}
       </div>
+
+      <section class="ficha camara">
+        <div class="camara__cena" id="camara3d" role="img" aria-label="Câmara fria em 3D com as gavetas ocupadas"></div>
+        <div class="camara__info">
+          <h2 class="subtitulo">Câmara fria</h2>
+          <p class="camara__numero"><b>${gavetas.length}</b> de ${capacidade} gavetas ocupadas</p>
+          <ul class="camara__legenda">
+            <li><span class="camara__ponto camara__ponto--aberta"></span>${gavetas.length} ${gavetas.length === 1 ? 'não identificado' : 'não identificados'}</li>
+            <li><span class="camara__ponto camara__ponto--livre"></span>${capacidade - gavetas.length} ${capacidade - gavetas.length === 1 ? 'gaveta livre' : 'gavetas livres'}</li>
+            <li><span class="camara__ponto camara__ponto--ok"></span>${p.corpos.IDENTIFICADO || 0} ${(p.corpos.IDENTIFICADO || 0) === 1 ? 'já identificado' : 'já identificados'}</li>
+          </ul>
+          <p class="dica">Arraste a câmara para girar.</p>
+          <p><a class="btn" href="#/admin/corpos">Ver corpos</a></p>
+        </div>
+      </section>
 
       <div class="painel-grid">
         <section class="ficha">
@@ -54,4 +74,10 @@ export async function render(main, params, ctx) {
         </div>
       </div>
     </section>`);
+
+  try {
+    montarCamara($('#camara3d', main), gavetas);
+  } catch {
+    $('#camara3d', main).hidden = true; // sem WebGL: o painel segue só com os números
+  }
 }

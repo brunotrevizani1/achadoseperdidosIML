@@ -1,9 +1,11 @@
-// Tela inicial pública: a barraca de achados e perdidos em 3D, em tela cheia
+// Tela inicial pública: a recepção de achados e perdidos do IML em 3D, em tela cheia
 import { api } from '../api.js';
 import { Barraca3D } from '../tres/barraca3d.js';
 import { mostrarModelo } from '../tres/visor3d.js';
+import { abrirAcesso } from './acesso.js';
+import { transicao, fadeOpaco, fadeLimpo } from './transicao.js';
 import {
-  html, $, data, toast, erroBanco, modalForm, opcoes, rotulo, PARENTESCOS, SEXO,
+  html, $, data, toast, erroBanco, modalForm, opcoes, rotulo, rotuloTatuagens, PARENTESCOS, SEXO,
 } from '../ui.js';
 
 const ATUALIZAR_A_CADA_MS = 15000;
@@ -40,6 +42,7 @@ function visor(item) {
             ${dado('Pele', item.cor_pele)}
             ${dado('Cabelo', item.cor_cabelo)}
             ${dado('Olhos', item.cor_olhos)}
+            ${dado('Tatuagem', rotuloTatuagens(item.tatuagens))}
           </dl>
           ${item.caracteristicas ? html`<p>${item.caracteristicas}</p>` : ''}`}
       <dl class="dados">
@@ -57,8 +60,10 @@ function visor(item) {
   dlg.addEventListener('close', () => {
     encerrar();
     dlg.remove();
+    cenaAtual?.pausar(false);
   });
   $('#conheco', dlg).addEventListener('click', () => manifestar(item));
+  cenaAtual?.pausar(true); // com o visor aberto a recepção atrás não precisa ser desenhada
   dlg.showModal();
   if (temWebGL()) encerrar = mostrarModelo($('#figura3d', dlg), item);
   else $('#figura3d', dlg).hidden = true;
@@ -72,6 +77,7 @@ async function manifestar(item) {
   const dados = await modalForm({
     titulo: eObjeto ? 'Este objeto é meu / eu conheço' : 'Eu conheço esta pessoa',
     confirmar: 'Enviar para o IML',
+    classe: 'modal--iml',
     corpo: html`
       <p class="dica">Sua mensagem vai para a equipe do IML, que entrará em contato. Seu contato <b>não</b> aparece no mural.</p>
       <div class="campos">
@@ -93,18 +99,52 @@ async function manifestar(item) {
   }
 }
 
+// Porta e teclado de senha: quem já está logado entra direto; os demais abrem o painel de acesso
+async function entrar(cena, ctx = contexto) {
+  if (entrando) return; // cliques repetidos na porta não abrem dois painéis
+  entrando = true;
+  try {
+    await entrarPelaPorta(cena, ctx);
+  } finally {
+    entrando = false;
+  }
+}
+
+async function entrarPelaPorta(cena, ctx) {
+  if (!ctx.usuario) {
+    cena?.pausar(true);
+    const usuario = await abrirAcesso();
+    cena?.pausar(false);
+    if (!usuario) {
+      if (location.hash === '#/entrar') location.hash = '#/';
+      return;
+    }
+    ctx.usuario = usuario;
+  }
+  // a porta se abre e a câmera avança até ela; depois a tela esmaece e a sala começa do outro lado da porta
+  await Promise.all([cena?.abrirPorta(650), cena?.zoomPorta(true, 950)]);
+  await fadeOpaco();
+  transicao.intro = true;
+  location.hash = '#/admin';
+}
+
+let contexto = null;
+let cenaAtual = null;
+let entrando = false;
+
 // ---------------------------------------------------------------------
-export async function render(main) {
+export async function render(main, params, ctx) {
   main.innerHTML = String(html`
     <section class="barraca-pagina">
-      <h1 class="so-leitor">Barraca de achados e perdidos</h1>
-      <div class="barraca" id="barraca" role="region" aria-label="Barraca de achados e perdidos">
+      <h1 class="so-leitor">Recepção de achados e perdidos do IML</h1>
+      <div class="barraca" id="barraca" role="region" aria-label="Recepção de achados e perdidos do IML">
         <div class="barraca__dica">Passe o mouse e clique em um item para vê-lo de perto</div>
         <div class="barraca__nome" id="nome" hidden></div>
-        <ul class="so-leitor" id="alternativa" aria-label="Itens da barraca"></ul>
+        <ul class="so-leitor" id="alternativa" aria-label="Itens da recepção"></ul>
       </div>
     </section>`);
 
+  contexto = ctx;
   const raiz = $('#barraca', main);
   const nome = $('#nome', main);
   const alternativa = $('#alternativa', main);
@@ -123,14 +163,16 @@ export async function render(main) {
 
   if (!temWebGL()) {
     raiz.classList.add('barraca--sem3d');
-    raiz.insertAdjacentHTML('afterbegin', '<p class="barraca__aviso">Seu navegador não conseguiu abrir a barraca em 3D. Escolha um item abaixo.</p>');
+    raiz.insertAdjacentHTML('afterbegin', '<p class="barraca__aviso">Seu navegador não conseguiu abrir a recepção em 3D. Escolha um item abaixo. <button type="button" class="btn btn--pequeno" id="acesso-alternativo">Área restrita</button></p>');
+    $('#acesso-alternativo', raiz).addEventListener('click', () => entrar(null));
     alternativa.classList.remove('so-leitor');
     itens = await api.get('/mural');
     listarAlternativa();
+    transicao.intro = false;
+    fadeLimpo();
     return;
   }
 
-  await document.fonts.load('700 44px Fredoka').catch(() => {});
   const cena = new Barraca3D(raiz, {
     aoPassar: (item, x, y) => {
       nome.hidden = !item;
@@ -141,6 +183,7 @@ export async function render(main) {
     },
     aoClicar: async (item) => {
       nome.hidden = true;
+      if (item.tipo === 'porta') return entrar(cena);
       await cena.girar(`${item.tipo}-${item.id}`, DURACAO_GIRO_MS);
       visor(item);
     },
@@ -151,6 +194,14 @@ export async function render(main) {
     listarAlternativa();
   };
   await atualizar();
+  await cena.pronta;
+  cenaAtual = cena;
+  if (transicao.intro) { // veio da sala pela porta: a câmera começa colada nela e se afasta
+    transicao.intro = false;
+    cena.introSaida();
+  }
+  fadeLimpo();
+  if (location.hash === '#/entrar' && !ctx.usuario) entrar(cena); // veio de uma tela restrita sem login
 
   // Itens cadastrados depois aparecem sozinhos; tudo para quando a pessoa sai desta tela
   let ativa = true;
